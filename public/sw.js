@@ -1,8 +1,8 @@
 importScripts("/src/js/idb.js");
 importScripts("/src/js/utility.js");
 
-var CACHE_STATIC_NAME = "static-v11";
-var CACHE_DYNAMIC_NAME = "dynamic-v11";
+var CACHE_STATIC_NAME = "static-v12";
+var CACHE_DYNAMIC_NAME = "dynamic-v12";
 var STATIC_FILES = [
   "/",
   "/index.html",
@@ -158,7 +158,17 @@ self.addEventListener("sync", function (event) {
               .then(function (res) {
                 console.log("Sent data", res);
                 if (res.ok) {
-                  return deleteItemFromData("sync-posts", dt.id);
+                  return deleteItemFromData("sync-posts", dt.id).then(
+                    function () {
+                      return self.clients
+                        .matchAll({ type: "window" })
+                        .then(function (clients) {
+                          clients.forEach(function (client) {
+                            client.postMessage({ action: "update-posts" });
+                          });
+                        });
+                    },
+                  );
                 }
               })
               .catch(function (err) {
