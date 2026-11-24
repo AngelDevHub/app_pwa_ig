@@ -84,9 +84,6 @@ function createCard(post, prepend) {
   var cardSupportingText = document.createElement("div");
   cardSupportingText.className = "mdl-card__supporting-text";
   var locText = post.location || "Location not specified";
-  if (post.isOfflinePending) {
-    locText += " • ⏳ Pendiente de envío (offline)";
-  }
   cardSupportingText.textContent = locText;
   cardSupportingText.style.textAlign = "center";
   cardWrapper.appendChild(cardSupportingText);
@@ -230,7 +227,6 @@ function syncPendingPosts() {
       }
 
       console.log("[Offline-Sync] Publicaciones pendientes encontradas:", pendingList.length);
-      showToast("Conexión detectada: enviando " + pendingList.length + " publicación(es) pendiente(s)...");
 
       var chain = Promise.resolve();
 
@@ -263,7 +259,6 @@ function syncPendingPosts() {
 
       return chain.then(function () {
         isSyncingPending = false;
-        showToast("¡Tus publicaciones offline ya se subieron exitosamente!");
         fetchPosts();
       });
     })
@@ -276,7 +271,6 @@ function syncPendingPosts() {
 // 1. Escuchar cuando el internet regrese (evento online del navegador)
 window.addEventListener("online", function () {
   console.log("[Red] Conexión a internet reanudada.");
-  showToast("¡Conexión a internet restablecida!");
   syncPendingPosts();
   startRealtimeSync();
   fetchPosts();
@@ -284,7 +278,6 @@ window.addEventListener("online", function () {
 
 window.addEventListener("offline", function () {
   console.log("[Red] Sin conexión a internet.");
-  showToast("Modo sin conexión. Tus publicaciones se guardarán localmente.");
 });
 
 // 2. Sincronización en tiempo real entre dispositivos (EventSource / SSE de Firebase)
@@ -423,9 +416,7 @@ if (form) {
     if (!isOnline) {
       // Guardar en la cola de pendientes
       if ("indexedDB" in window && typeof writeData === "function") {
-        writeData("sync-posts", newPost).then(function () {
-          showToast("Guardado sin internet. Se publicará automáticamente al conectarte.");
-        });
+        writeData("sync-posts", newPost);
       }
       // Si el navegador soporta SyncManager (Android / Chrome Desktop), registrar además el sync
       if ("serviceWorker" in navigator && "SyncManager" in window) {
@@ -454,12 +445,9 @@ if (form) {
         body: JSON.stringify(newPost),
       })
         .then(function () {
-          showToast("¡Publicación enviada con éxito!");
           fetchPosts();
         })
-        .catch(function () {
-          showToast("Error de conexión. Se intentará de nuevo más tarde.");
-        });
+        .catch(function () {});
     }
 
     // Registrar SyncManager si está disponible
